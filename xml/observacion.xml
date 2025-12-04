@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<observacion dispositivo_id="192.168.1.100" timestamp="2025-12-04T10:30:00-05:00">
+    
+    <entidad nombre="Invernadero">
+        <!-- Medición del DHT11 -->
+        <recurso_iot tipo="sensor" sensor_id="1">
+            <nombre>DHT11</nombre>
+            <mediciones>
+                <medicion propiedad="temperatura">
+                    <valor>18.5</valor>
+                    <unidad>°C</unidad>
+                </medicion>
+                <medicion propiedad="humedad_ambiental">
+                    <valor>65</valor>
+                    <unidad>%</unidad>
+                </medicion>
+            </mediciones>
+            <hora utc="-5">10:30:00</hora>
+            <lugar lat="2.4419" lon="-76.6061" ele="1760"/>
+        </recurso_iot>
+        
+        <!-- Medición del sensor de humedad de suelo -->
+        <recurso_iot tipo="sensor" sensor_id="2">
+            <nombre>HW-080</nombre>
+            <mediciones>
+                <medicion propiedad="humedad_suelo">
+                    <valor>1</valor>
+                    <estado>SECO</estado>
+                </medicion>
+            </mediciones>
+            <hora utc="-5">10:30:00</hora>
+        </recurso_iot>
+        
+        <!-- Medición del PIR -->
+        <recurso_iot tipo="sensor" sensor_id="3">
+            <nombre>PIR</nombre>
+            <mediciones>
+                <medicion propiedad="movimiento">
+                    <valor>0</valor>
+                    <estado>SIN_MOVIMIENTO</estado>
+                </medicion>
+            </mediciones>
+            <hora utc="-5">10:30:00</hora>
+        </recurso_iot>
+        
+        <!-- Medición del LDR -->
+        <recurso_iot tipo="sensor" sensor_id="4">
+            <nombre>LDR</nombre>
+            <mediciones>
+                <medicion propiedad="luminosidad">
+                    <valor>350</valor>
+                    <zona>MEDIA</zona>
+                </medicion>
+            </mediciones>
+            <hora utc="-5">10:30:00</hora>
+        </recurso_iot>
+        
+        <!-- Estados de actuadores -->
+        <recurso_iot tipo="actuador" sensor_id="5">
+            <nombre>BombaRiego</nombre>
+            <estado>ENCENDIDO</estado>
+        </recurso_iot>
+        
+        <recurso_iot tipo="actuador" sensor_id="6">
+            <nombre>Ventilador</nombre>
+            <estado>APAGADO</estado>
+        </recurso_iot>
+        
+        <recurso_iot tipo="actuador" sensor_id="7">
+            <nombre>Deshumidificador</nombre>
+            <estado>APAGADO</estado>
+        </recurso_iot>
+    </entidad>
+</observacion>
+

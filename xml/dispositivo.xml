@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dispositivo_iot id="192.168.1.100" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="dispositivo.xsd">
+    
+    <gateway>
+        <propiedades>
+            <nombre>PlantIrrigationSystem</nombre>
+            <tipo_gateway>ESP32</tipo_gateway>
+            <modelo>DOIT-DevKit-V1</modelo>
+            <fabricante>Espressif</fabricante>
+            <descripcion>Sistema de riego automático y control ambiental</descripcion>
+        </propiedades>
+        
+        <recursos_iot>
+            <!-- SENSORES -->
+            <recurso_iot recurso_id="1" tipo_recurso="sensor" senal="digital">
+                <nombre_recurso>DHT11</nombre_recurso>
+                <gpio>19</gpio>
+                <voltaje rango_inicial="3.3" rango_final="5.0"/>
+                <propiedades_medicion>
+                    <propiedad nombre="temperatura" unidad="°C"/>
+                    <propiedad nombre="humedad_ambiental" unidad="%"/>
+                </propiedades_medicion>
+            </recurso_iot>
+            
+            <recurso_iot recurso_id="2" tipo_recurso="sensor" senal="digital">
+                <nombre_recurso>HW-080</nombre_recurso>
+                <gpio>23</gpio>
+                <voltaje rango_inicial="3.3" rango_final="5.0"/>
+                <propiedades_medicion>
+                    <propiedad nombre="humedad_suelo" unidad="boolean"/>
+                </propiedades_medicion>
+            </recurso_iot>
+            
+            <recurso_iot recurso_id="3" tipo_recurso="sensor" senal="digital">
+                <nombre_recurso>PIR</nombre_recurso>
+                <gpio>18</gpio>
+                <voltaje rango_inicial="3.3" rango_final="5.0"/>
+                <propiedades_medicion>
+                    <propiedad nombre="movimiento" unidad="boolean"/>
+                </propiedades_medicion>
+            </recurso_iot>
+            
+            <recurso_iot recurso_id="4" tipo_recurso="sensor" senal="analoga">
+                <nombre_recurso>LDR</nombre_recurso>
+                <gpio>39</gpio>
+                <voltaje rango_inicial="0" rango_final="3.3"/>
+                <propiedades_medicion>
+                    <propiedad nombre="luminosidad" unidad="lux"/>
+                </propiedades_medicion>
+            </recurso_iot>
+            
+            <!-- ACTUADORES -->
+            <recurso_iot recurso_id="5" tipo_recurso="actuador" senal="digital">
+                <nombre_recurso>BombaRiego</nombre_recurso>
+                <gpio>17,25</gpio>
+                <voltaje rango_inicial="0" rango_final="5.0"/>
+                <descripcion>Motor de bomba para irrigación</descripcion>
+            </recurso_iot>
+            
+            <recurso_iot recurso_id="6" tipo_recurso="actuador" senal="digital">
+                <nombre_recurso>Ventilador</nombre_recurso>
+                <gpio>16</gpio>
+                <voltaje rango_inicial="0" rango_final="5.0"/>
+                <descripcion>Motor para ventilación por temperatura</descripcion>
+            </recurso_iot>
+            
+            <recurso_iot recurso_id="7" tipo_recurso="actuador" senal="digital">
+                <nombre_recurso>Deshumidificador</nombre_recurso>
+                <gpio>27</gpio>
+                <voltaje rango_inicial="0" rango_final="5.0"/>
+                <descripcion>Motor para control de humedad ambiental</descripcion>
+            </recurso_iot>
+            
+            <recurso_iot recurso_id="8" tipo_recurso="actuador" senal="digital">
+                <nombre_recurso>Buzzer</nombre_recurso>
+                <gpio>26</gpio>
+                <voltaje rango_inicial="0" rango_final="3.3"/>
+                <descripcion>Alarma sonora de movimiento</descripcion>
+            </recurso_iot>
+            
+            <recurso_iot recurso_id="9" tipo_recurso="actuador" senal="PWM">
+                <nombre_recurso>LED_RGB</nombre_recurso>
+                <gpio>5,13,12</gpio>
+                <voltaje rango_inicial="0" rango_final="3.3"/>
+                <descripcion>Indicador visual de nivel de luz</descripcion>
+            </recurso_iot>
+        </recursos_iot>
+    </gateway>
+</dispositivo_iot>
+

@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<reglas_eca dispositivo_id="192.168.1.100">
+    
+    <!-- REGLA 1: Riego automático -->
+    <ECA id="regla_riego" descripcion="Activar bomba cuando el suelo está seco">
+        <Evento sensor_id="2">
+            <recurso>HW-080</recurso>
+            <propiedad>humedad_suelo</propiedad>
+        </Evento>
+        <Condicion>
+            <operador>IGUAL</operador>
+            <valor>HIGH</valor>
+            <descripcion>Suelo seco detectado</descripcion>
+        </Condicion>
+        <Accion actuador_id="5">
+            <recurso>BombaRiego</recurso>
+            <comando>ENCENDER</comando>
+        </Accion>
+    </ECA>
+    
+    <!-- REGLA 2: Detener riego -->
+    <ECA id="regla_riego_off" descripcion="Desactivar bomba cuando el suelo está húmedo">
+        <Evento sensor_id="2">
+            <recurso>HW-080</recurso>
+            <propiedad>humedad_suelo</propiedad>
+        </Evento>
+        <Condicion>
+            <operador>IGUAL</operador>
+            <valor>LOW</valor>
+            <descripcion>Suelo húmedo detectado</descripcion>
+        </Condicion>
+        <Accion actuador_id="5">
+            <recurso>BombaRiego</recurso>
+            <comando>APAGAR</comando>
+        </Accion>
+    </ECA>
+    
+    <!-- REGLA 3: Ventilación por temperatura alta -->
+    <ECA id="regla_ventilacion" descripcion="Activar ventilador cuando temperatura es alta">
+        <Evento sensor_id="1">
+            <recurso>DHT11</recurso>
+            <propiedad>temperatura</propiedad>
+        </Evento>
+        <Condicion>
+            <operador>MAYOR_O_IGUAL</operador>
+            <umbral>19.0</umbral>
+            <unidad>°C</unidad>
+        </Condicion>
+        <Accion actuador_id="6">
+            <recurso>Ventilador</recurso>
+            <comando>ENCENDER</comando>
+        </Accion>
+    </ECA>
+    
+    <!-- REGLA 4: Desactivar ventilación -->
+    <ECA id="regla_ventilacion_off" descripcion="Desactivar ventilador cuando temperatura es normal">
+        <Evento sensor_id="1">
+            <recurso>DHT11</recurso>
+            <propiedad>temperatura</propiedad>
+        </Evento>
+        <Condicion>
+            <operador>MENOR_O_IGUAL</operador>
+            <umbral>15.0</umbral>
+            <unidad>°C</unidad>
+        </Condicion>
+        <Accion actuador_id="6">
+            <recurso>Ventilador</recurso>
+            <comando>APAGAR</comando>
+        </Accion>
+    </ECA>
+    
+    <!-- REGLA 5: Deshumidificación -->
+    <ECA id="regla_deshumidificador" descripcion="Activar deshumidificador cuando humedad ambiental es alta">
+        <Evento sensor_id="1">
+            <recurso>DHT11</recurso>
+            <propiedad>humedad_ambiental</propiedad>
+        </Evento>
+        <Condicion>
+            <operador>MAYOR_O_IGUAL</operador>
+            <umbral>70.0</umbral>
+            <unidad>%</unidad>
+        </Condicion>
+        <Accion actuador_id="7">
+            <recurso>Deshumidificador</recurso>
+            <comando>ENCENDER</comando>
+        </Accion>
+    </ECA>
+    
+    <!-- REGLA 6: Desactivar deshumidificador -->
+    <ECA id="regla_deshumidificador_off" descripcion="Desactivar deshumidificador cuando humedad es normal">
+        <Evento sensor_id="1">
+            <recurso>DHT11</recurso>
+            <propiedad>humedad_ambiental</propiedad>
+        </Evento>
+        <Condicion>
+            <operador>MENOR_O_IGUAL</operador>
+            <umbral>50.0</umbral>
+            <unidad>%</unidad>
+        </Condicion>
+        <Accion actuador_id="7">
+            <recurso>Deshumidificador</recurso>
+            <comando>APAGAR</comando>
+        </Accion>
+    </ECA>
+    
+    <!-- REGLA 7: Alarma de movimiento -->
+    <ECA id="regla_alarma" descripcion="Activar buzzer cuando se detecta movimiento">
+        <Evento sensor_id="3">
+            <recurso>PIR</recurso>
+            <propiedad>movimiento</propiedad>
+        </Evento>
+        <Condicion>
+            <operador>IGUAL</operador>
+            <valor>HIGH</valor>
+            <consecutivo>3</consecutivo>
+            <descripcion>Detección consecutiva requerida</descripcion>
+        </Condicion>
+        <Accion actuador_id="8">
+            <recurso>Buzzer</recurso>
+            <comando>ENCENDER</comando>
+            <duracion_ms>3000</duracion_ms>
+        </Accion>
+    </ECA>
+    
+    <!-- REGLA 8: LED según luminosidad (zona oscura) -->
+    <ECA id="regla_led_oscuro" descripcion="LED azul cuando hay poca luz">
+        <Evento sensor_id="4">
+            <recurso>LDR</recurso>
+            <propiedad>luminosidad</propiedad>
+        </Evento>
+        <Condicion>
+            <operador>MENOR</operador>
+            <umbral>20</umbral>
+            <zona>OSCURO</zona>
+        </Condicion>
+        <Accion actuador_id="9">
+            <recurso>LED_RGB</recurso>
+            <comando>SET_COLOR</comando>
+            <parametros r="0" g="0" b="255"/>
+        </Accion>
+    </ECA>
+    
+    <!-- REGLA 9: LED según luminosidad (zona media) -->
+    <ECA id="regla_led_media" descripcion="LED verde cuando hay luz media">
+        <Evento sensor_id="4">
+            <recurso>LDR</recurso>
+            <propiedad>luminosidad</propiedad>
+        </Evento>
+        <Condicion>
+            <operador>RANGO</operador>
+            <rango_min>20</rango_min>
+            <rango_max>500</rango_max>
+            <zona>MEDIA</zona>
+        </Condicion>
+        <Accion actuador_id="9">
+            <recurso>LED_RGB</recurso>
+            <comando>SET_COLOR</comando>
+            <parametros r="0" g="255" b="0"/>
+        </Accion>
+    </ECA>
+    
+    <!-- REGLA 10: LED según luminosidad (mucha luz) -->
+    <ECA id="regla_led_brillante" descripcion="LED rojo cuando hay mucha luz">
+        <Evento sensor_id="4">
+            <recurso>LDR</recurso>
+            <propiedad>luminosidad</propiedad>
+        </Evento>
+        <Condicion>
+            <operador>MAYOR_O_IGUAL</operador>
+            <umbral>500</umbral>
+            <zona>BRILLANTE</zona>
+        </Condicion>
+        <Accion actuador_id="9">
+            <recurso>LED_RGB</recurso>
+            <comando>SET_COLOR</comando>
+            <parametros r="255" g="0" b="0"/>
+        </Accion>
+    </ECA>
+    
+</reglas_eca>
+
