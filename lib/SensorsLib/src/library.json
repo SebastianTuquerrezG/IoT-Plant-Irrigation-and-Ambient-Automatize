@@ -1,0 +1,19 @@
+{
+  "name": "SensorsLib",
+  "version": "1.0.0",
+  "description": "Libreria para lectura de sensores IoT (DHT11, HW-080, PIR, LDR)",
+  "keywords": ["iot", "sensors", "dht11", "pir", "ldr"],
+  "authors": [
+    {
+      "name": "Sistema de Riego IoT"
+    }
+  ],
+  "license": "MIT",
+  "frameworks": ["arduino"],
+  "platforms": ["espressif32"],
+  "dependencies": {
+    "adafruit/DHT sensor library": "^1.4.6",
+    "adafruit/Adafruit Unified Sensor": "^1.1.15"
+  }
+}
+

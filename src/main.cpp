@@ -1,211 +1,158 @@
+/**
+ * Sistema de Riego Automático y Control Ambiental IoT
+ * 
+ * Este proyecto implementa un sistema IoT completo con:
+ * - 4 sensores (DHT11, HW-080, PIR, LDR)
+ * - 5 actuadores (Bomba, Ventilador, Deshumidificador, Buzzer, LED RGB)
+ * - Servidor web con dashboard y API REST
+ * - Comunicación MQTT para telemetría y control remoto
+ * 
+ * Código modularizado en librerías propias:
+ * - SensorsLib: Lectura de sensores
+ * - ActuatorsLib: Control de actuadores
+ * - MetadataLib: Generación de JSON
+ * - WebServerLib: Servidor HTTP y API REST
+ * - MqttLib: Comunicación MQTT
+ */
+
 #include <Arduino.h>
-#include <DHT.h>
+#include <WiFiManager.h>
 
-#define motor1A 17
-#define motor2A 25
-#define motor3A 16
-#define motor4A 27
-#define sensorPin 23  // Sensor de humedad HW-080 (DO)
-const int PIRPin = 18;
+// Librerías propias del proyecto
+#include <SensorsLib.h>
+#include <ActuatorsLib.h>
+#include <MetadataLib.h>
+#include <WebServerLib.h>
+#include <MqttLib.h>
 
-#define DHTPIN 19     // Pin del DHT11
-#define DHTTYPE DHT11 // Tipo de sensor
+// ==================== CONFIGURACIÓN DE PINES ====================
+// Sensores
+#define DHT_PIN         19
+#define HUMEDAD_PIN     23    // HW-080
+#define PIR_PIN         18
+#define LDR_PIN         39
 
-DHT dht(DHTPIN, DHTTYPE);
-unsigned long lastDHT = 0;
-const unsigned long intervaloDHT = 2000;  // cada 2s
+// Actuadores
+#define MOTOR1A         17    // Bomba
+#define MOTOR2A         25    // Bomba
+#define MOTOR3A         16    // Ventilador
+#define MOTOR4A         27    // Deshumidificador
+#define BUZZER_PIN      26
+#define RED_PIN         5
+#define GREEN_PIN       13
+#define BLUE_PIN        12
 
-#define BUZZER_PIN 26
-#define RED_PIN 5         
-#define GREEN_PIN 13
-#define BLUE_PIN 12 
+// ==================== CONFIGURACIÓN DEL SISTEMA ====================
+const char* MQTT_BROKER = "test.mosquitto.org";
+const int MQTT_PORT = 1883;
 
-const int LDR_PIN = 39;
+const float TEMP_MAX = 19.0;
+const float TEMP_MIN = 15.0;
+const float HUMEDAD_MAX = 70.0;
+const float HUMEDAD_MIN = 50.0;
 
-bool RGB_COMMON_ANODE = false;
+// ==================== INSTANCIAS DE LIBRERÍAS ====================
+SensorsLib sensors;
+ActuatorsLib actuators;
+MetadataLib metadata;
+WebServerLib webServer;
+MqttLib mqtt;
 
-// Timers
-unsigned long lastHumedadCheck = 0;
-const unsigned long intervaloHumedad = 200; // ms
-
-unsigned long lastLDRCheck = 0;
-const unsigned long intervaloLDR = 300;   // <--- LDR PARARELO
-
-// PIR timers
-unsigned long lastPIRCheck = 0;
-const unsigned long intervaloPIR = 50;
-const int requiredConsecutive = 3;
-unsigned long lastMotionTime = 0;
-const unsigned long motionHoldMs = 3000;
-int consecutiveHigh = 0;
-bool motionState = false;
-
-bool bombaEncendida = false;
-bool motor3Encendido = false;
-bool motor4Encendido = false;
-
-// UMBRALES DHT11 para control de motores 3 y 4
-const float TEMP_MAX = 19.0;      // Temperatura máxima para activar ventilación (motor3)
-const float TEMP_MIN = 15.0;      // Temperatura mínima para desactivar ventilación
-const float HUMEDAD_MAX = 70.0;   // Humedad máxima para activar deshumidificador (motor4)
-const float HUMEDAD_MIN = 50.0;   // Humedad mínima para desactivar deshumidificador
-
-void setRGB(int r, int g, int b) {
-  if (RGB_COMMON_ANODE) {
-    r = 255 - r; g = 255 - g; b = 255 - b;
-  }
-  analogWrite(RED_PIN, r);
-  analogWrite(GREEN_PIN, g);
-  analogWrite(BLUE_PIN, b);
-}
-
+// ==================== SETUP ====================
 void setup() {
   Serial.begin(115200);
   delay(2000);
-  Serial.println("Sistema iniciado...");
+  
+  Serial.println("\n========================================");
+  Serial.println("  Sistema de Riego Automatico IoT");
+  Serial.println("  Version Modular con Librerias");
+  Serial.println("========================================\n");
 
-  // Inicializar DHT
-  dht.begin();
-  delay(1000);
+  // Inicializar sensores
+  Serial.println("[Setup] Inicializando sensores...");
+  sensors.begin(DHT_PIN, HUMEDAD_PIN, PIR_PIN, LDR_PIN);
+  sensors.setPirConsecutiveRequired(3);
+  sensors.setPirHoldTime(3000);
 
-  pinMode(motor1A, OUTPUT);
-  pinMode(motor2A, OUTPUT);
-  pinMode(motor3A, OUTPUT);
-  pinMode(motor4A, OUTPUT);
-  pinMode(sensorPin, INPUT);
-  pinMode(PIRPin, INPUT);
+  // Inicializar actuadores
+  Serial.println("[Setup] Inicializando actuadores...");
+  actuators.begin(MOTOR1A, MOTOR2A, MOTOR3A, MOTOR4A,
+                  BUZZER_PIN, RED_PIN, GREEN_PIN, BLUE_PIN);
 
-  pinMode(BUZZER_PIN, OUTPUT);
-  pinMode(RED_PIN, OUTPUT);
-  pinMode(GREEN_PIN, OUTPUT);
-  pinMode(BLUE_PIN, OUTPUT);
+  // Configurar metadatos
+  Serial.println("[Setup] Configurando metadatos...");
+  DeviceConfig config;
+  config.id = "ESP32-Invernadero";
+  config.tipo = "ESP32-DOIT-DevKit-V1";
+  config.fabricante = "Espressif";
+  config.descripcion = "Sistema de riego automatico y control ambiental";
+  config.mqttBroker = MQTT_BROKER;
+  config.mqttPort = MQTT_PORT;
+  config.tempMax = TEMP_MAX;
+  config.tempMin = TEMP_MIN;
+  config.humedadMax = HUMEDAD_MAX;
+  config.humedadMin = HUMEDAD_MIN;
+  metadata.setConfig(config);
+  metadata.setReferences(&sensors, &actuators);
 
-  digitalWrite(motor1A, LOW);
-  digitalWrite(motor2A, LOW);
-  digitalWrite(motor3A, LOW);
-  digitalWrite(motor4A, LOW);
-  digitalWrite(BUZZER_PIN, LOW);
+  // Conectar WiFi
+  Serial.println("[Setup] Iniciando WiFiManager...");
+  WiFiManager wifiManager;
+  wifiManager.autoConnect("ESP32-Invernadero");
+  Serial.print("[Setup] WiFi conectado! IP: ");
+  Serial.println(WiFi.localIP());
 
-  delay(2000);
+  // Inicializar servidor web
+  Serial.println("[Setup] Iniciando servidor web...");
+  webServer.begin(&sensors, &actuators, &metadata);
+
+  // Inicializar MQTT
+  Serial.println("[Setup] Iniciando cliente MQTT...");
+  mqtt.begin(MQTT_BROKER, MQTT_PORT, &sensors, &actuators);
+  mqtt.setPublishInterval(5000); // Publicar cada 5 segundos
+
+  Serial.println("\n[Setup] Sistema listo!");
+  Serial.println("========================================\n");
 }
 
+// ==================== LOOP ====================
 void loop() {
-  unsigned long ahora = millis();
+  // 1. Actualizar lecturas de sensores
+  sensors.update();
+  SensorData data = sensors.getData();
 
-  // ----------- PIR -----------
-  if (ahora - lastPIRCheck >= intervaloPIR) {
-    lastPIRCheck = ahora;
-
-    int lectura = digitalRead(PIRPin);
-    if (lectura == HIGH) consecutiveHigh++;
-    else consecutiveHigh = 0;
-
-    if (consecutiveHigh >= requiredConsecutive) {
-      consecutiveHigh = 0;
-      lastMotionTime = ahora;
-
-      if (!motionState) {
-        motionState = true;
-        Serial.println("Movimiento detectado → BUZZER ON");
-      }
-    }
-
-    if (motionState && (ahora - lastMotionTime >= motionHoldMs)) {
-      motionState = false;
-      Serial.println("Hold terminado → BUZZER OFF");
-    }
-
-    digitalWrite(BUZZER_PIN, motionState ? HIGH : LOW);
+  // 2. Lógica de automatización (solo si no está en modo manual)
+  
+  // Control de Bomba por humedad de suelo
+  if (!actuators.isBombaManual()) {
+    actuators.setBomba(data.humedadSuelo); // Seco (true) = Bomba ON
   }
 
-  // ----------- HUMEDAD (ESTE ERA TU PROBLEMA) -----------
-  if (ahora - lastHumedadCheck >= intervaloHumedad) {
-    lastHumedadCheck = ahora;
-
-    int humedad = digitalRead(sensorPin);
-
-    if (humedad == HIGH && !bombaEncendida) {
-      Serial.println("Suelo SECO → Activando bomba");
-      digitalWrite(motor1A, HIGH);
-      digitalWrite(motor2A, LOW);
-      bombaEncendida = true;
-    } 
-    else if (humedad == LOW && bombaEncendida) {
-      Serial.println("Suelo HUMEDO → Bomba OFF");
-      digitalWrite(motor1A, LOW);
-      digitalWrite(motor2A, LOW);
-      bombaEncendida = false;
+  // Control de Ventilador por temperatura
+  if (!actuators.isVentiladorManual()) {
+    if (data.temperatura >= TEMP_MAX) {
+      actuators.setVentilador(true);
+    } else if (data.temperatura <= TEMP_MIN) {
+      actuators.setVentilador(false);
     }
   }
 
-  // ----------- LDR (PROCESO PARALELO REAL) -----------
-  if (ahora - lastLDRCheck >= intervaloLDR) {
-    lastLDRCheck = ahora;
-
-    int ldr = analogRead(LDR_PIN);
-    Serial.print("LDR"); Serial.println((int)ldr);
-
-    // Solo mostramos cuando cambia de zona
-    static int zona = -1;
-    int nuevaZona;
-
-    if (ldr < 20)          nuevaZona = 0;  // oscuro
-    else if (ldr >= 20 && ldr < 500)     nuevaZona = 1;  // media
-    else                    nuevaZona = 2;  // mucha luz
-
-    if (zona != nuevaZona) {
-      zona = nuevaZona;
-
-      Serial.print("LDR: ");
-      Serial.print(ldr);
-      Serial.print(" → Zona: ");
-      Serial.println(zona);
-
-      if (zona == 0)      setRGB(0, 0, 255);
-      else if (zona == 1) setRGB(0, 255, 0);
-      else                setRGB(255, 0, 0);
+  // Control de Deshumidificador por humedad ambiental
+  if (!actuators.isDeshumidificadorManual()) {
+    if (data.humedadAmbiental >= HUMEDAD_MAX) {
+      actuators.setDeshumidificador(true);
+    } else if (data.humedadAmbiental <= HUMEDAD_MIN) {
+      actuators.setDeshumidificador(false);
     }
   }
 
-  // ----------- DHT11 -----------
-  if (ahora - lastDHT >= intervaloDHT) {
-    lastDHT = ahora;
+  // Control de Buzzer por movimiento (siempre automático)
+  actuators.setBuzzer(data.movimiento);
 
-    float temperature = dht.readTemperature();
-    float humidity = dht.readHumidity();
+  // Control de LED RGB por luminosidad (siempre automático)
+  actuators.setRGBByZone(data.zonaLuz);
 
-    // Validar lecturas
-    if (isnan(temperature) || isnan(humidity)) {
-      Serial.println("❌ Error leyendo DHT11 - Verifica conexión");
-    } else {
-      Serial.println("=================================");
-      Serial.print("Temp: "); Serial.print(temperature);
-      Serial.print("°C | Humedad: "); Serial.print(humidity);
-      Serial.println("%");
-
-      // ----------- CONTROL MOTOR 3 (Ventilación) por TEMPERATURA -----------
-      if (temperature >= TEMP_MAX && !motor3Encendido) {
-        Serial.println("⚠️ Temperatura ALTA → Activando ventilador (Motor 3)");
-        digitalWrite(motor3A, HIGH);
-        motor3Encendido = true;
-      }
-      else if (temperature <= TEMP_MIN && motor3Encendido) {
-        Serial.println("✓ Temperatura normal → Desactivando ventilador (Motor 3)");
-        digitalWrite(motor3A, LOW);
-        motor3Encendido = false;
-      }
-
-      // ----------- CONTROL MOTOR 4 (Deshumidificador) por HUMEDAD -----------
-      if (humidity >= HUMEDAD_MAX && !motor4Encendido) {
-        Serial.println("⚠️ Humedad ALTA → Activando deshumidificador (Motor 4)");
-        digitalWrite(motor4A, HIGH);
-        motor4Encendido = true;
-      }
-      else if (humidity <= HUMEDAD_MIN && motor4Encendido) {
-        Serial.println("✓ Humedad normal → Desactivando deshumidificador (Motor 4)");
-        digitalWrite(motor4A, LOW);
-        motor4Encendido = false;
-      }
-    }
-  }
+  // 3. Servicios de comunicación
+  webServer.handleClient();  // Atender peticiones HTTP
+  mqtt.loop();               // Mantener conexión MQTT y publicar datos
 }

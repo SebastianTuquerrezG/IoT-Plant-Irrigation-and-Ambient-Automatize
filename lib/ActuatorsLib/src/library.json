@@ -1,0 +1,15 @@
+{
+  "name": "ActuatorsLib",
+  "version": "1.0.0",
+  "description": "Libreria para control de actuadores IoT (motores, buzzer, LED RGB)",
+  "keywords": ["iot", "actuators", "motor", "led", "buzzer"],
+  "authors": [
+    {
+      "name": "Sistema de Riego IoT"
+    }
+  ],
+  "license": "MIT",
+  "frameworks": ["arduino"],
+  "platforms": ["espressif32"]
+}
+
