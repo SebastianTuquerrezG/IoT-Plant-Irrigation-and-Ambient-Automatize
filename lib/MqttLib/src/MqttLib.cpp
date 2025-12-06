@@ -3,6 +3,9 @@
 // Instancia global para el callback estático
 MqttLib* _mqttInstance = nullptr;
 
+// Metadata constante
+const char* METADATA_PAYLOAD = "{\"device\":\"ESP32 Invernadero\",\"location\":\"Casa\",\"sensors\":[\"temperatura\",\"humedad_ambiental\",\"humedad_suelo\",\"luminosidad\",\"movimiento\"],\"actuators\":[\"bomba\",\"ventilador\",\"deshumidificador\",\"buzzer\"]}";
+
 MqttLib::MqttLib() : _client(_espClient) {
   _sensors = nullptr;
   _actuators = nullptr;
@@ -11,6 +14,7 @@ MqttLib::MqttLib() : _client(_espClient) {
   _lastPublish = 0;
   _publishInterval = 5000; // 5 segundos por defecto
   _mqttInstance = this;
+  clientId = "ESP32_" + String(random(0xffff), HEX);
 }
 
 void MqttLib::begin(const char* server, int port, SensorsLib* sensors, ActuatorsLib* actuators) {
@@ -26,6 +30,10 @@ void MqttLib::begin(const char* server, int port, SensorsLib* sensors, Actuators
   Serial.print(server);
   Serial.print(":");
   Serial.println(port);
+}
+
+void MqttLib::publishMetadata(const char* payload) {
+  _client.publish("invernadero/metadata", payload, true); // retained = true
 }
 
 void MqttLib::loop() {
@@ -57,12 +65,10 @@ PubSubClient* MqttLib::getClient() {
 void MqttLib::reconnect() {
   while (!_client.connected()) {
     Serial.print("[MqttLib] Conectando...");
-    
-    String clientId = "ESP32-Invernadero-" + String(random(0xffff), HEX);
-    
     if (_client.connect(clientId.c_str())) {
       Serial.println(" Conectado!");
       subscribeToCommands();
+      publishMetadata(METADATA_PAYLOAD);
     } else {
       Serial.print(" Error: ");
       Serial.print(_client.state());
@@ -138,5 +144,12 @@ void MqttLib::publishData() {
   _client.publish(TOPIC_ESTADO_BUZZER, actuatorState.buzzer ? "ON" : "OFF");
   
   Serial.println("[MqttLib] Datos publicados");
+  String payload = "{";
+  payload += "\"temp\":" + String(sensorData.temperatura,1) + ",";
+  payload += "\"hum\":" + String(sensorData.humedadAmbiental,1) + ",";
+  payload += "\"soil\":\"" + String(sensorData.humedadSuelo ? "SECO" : "HUMEDO") + "\",";
+  payload += "\"ldr\":" + String(sensorData.luminosidad) + ",";
+  payload += "\"motion\":\"" + String(sensorData.movimiento ? "DETECTADO":"SIN_MOVIMIENTO") + "\"";
+  payload += "}";
+  _client.publish("invernadero/sensors/json", payload.c_str());
 }
-

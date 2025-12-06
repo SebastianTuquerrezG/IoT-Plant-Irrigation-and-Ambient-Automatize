@@ -43,7 +43,14 @@ void ActuatorsLib::begin(int motor1A, int motor2A, int motor3A, int motor4A,
   digitalWrite(_motor3A, LOW);
   digitalWrite(_motor4A, LOW);
   digitalWrite(_buzzerPin, LOW);
-  
+
+  ledcSetup(PWM_CH_R, PWM_FREQ, PWM_RES);
+  ledcAttachPin(_redPin, PWM_CH_R);
+  ledcSetup(PWM_CH_G, PWM_FREQ, PWM_RES);
+  ledcAttachPin(_greenPin, PWM_CH_G);
+  ledcSetup(PWM_CH_B, PWM_FREQ, PWM_RES);
+  ledcAttachPin(_bluePin, PWM_CH_B);
+    
   Serial.println("[ActuatorsLib] Actuadores inicializados");
 }
 
@@ -145,9 +152,9 @@ void ActuatorsLib::applyRGB() {
     b = 255 - b;
   }
   
-  analogWrite(_redPin, r);
-  analogWrite(_greenPin, g);
-  analogWrite(_bluePin, b);
+  ledcWrite(PWM_CH_R, r);
+  ledcWrite(PWM_CH_G, g);
+  ledcWrite(PWM_CH_B, b);
 }
 
 // ========== ESTADOS ==========

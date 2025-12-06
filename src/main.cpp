@@ -38,9 +38,9 @@
 #define MOTOR3A         16    // Ventilador
 #define MOTOR4A         27    // Deshumidificador
 #define BUZZER_PIN      26
-#define RED_PIN         5
+#define RED_PIN         12
 #define GREEN_PIN       13
-#define BLUE_PIN        12
+#define BLUE_PIN        5
 
 // ==================== CONFIGURACIÓN DEL SISTEMA ====================
 const char* MQTT_BROKER = "test.mosquitto.org";

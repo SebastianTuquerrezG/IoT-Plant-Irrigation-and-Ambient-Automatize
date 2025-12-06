@@ -4,6 +4,12 @@
 
 #include <Arduino.h>
 
+static const int PWM_CH_R = 0;
+static const int PWM_CH_G = 1;
+static const int PWM_CH_B = 2;
+static const int PWM_FREQ = 5000;
+static const int PWM_RES = 8;
+
 // Estructura para almacenar estados de actuadores
 struct ActuatorState {
   bool bomba;

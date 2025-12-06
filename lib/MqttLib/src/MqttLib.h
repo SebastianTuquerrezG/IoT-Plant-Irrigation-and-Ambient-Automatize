@@ -22,6 +22,12 @@ public:
   void begin(const char* server, int port, SensorsLib* sensors, ActuatorsLib* actuators);
   
   /**
+   * @brief Publica el metadata del sistema
+   * @param payload Cadena JSON con el metadata
+   */
+  void publishMetadata(const char* payload);
+
+  /**
    * @brief Mantiene la conexión MQTT activa
    * Debe llamarse en el loop principal
    */
@@ -52,6 +58,7 @@ private:
   PubSubClient _client;
   SensorsLib* _sensors;
   ActuatorsLib* _actuators;
+  String clientId;
   
   const char* _server;
   int _port;
