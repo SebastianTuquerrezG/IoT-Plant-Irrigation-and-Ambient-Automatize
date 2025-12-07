@@ -19,6 +19,7 @@
 #include <MetadataLib.h>
 #include <WebServerLib.h>
 #include <MqttLib.h>
+#include <esp_task_wdt.h>
 
 // ==================== CONFIGURACIÓN DE PINES ====================
 // Sensores
@@ -30,7 +31,7 @@
 // Actuadores
 #define MOTOR1A         17    // Bomba
 #define MOTOR2A         25    // Bomba
-//#define MOTOR3A         16    // Ventilador
+#define MOTOR3A         16    // Ventilador
 #define MOTOR4A         27    // Deshumidificador
 #define BUZZER_PIN      26
 #define RED_PIN         12
@@ -47,6 +48,20 @@ ActuatorsLib actuators;
 MetadataLib metadata;
 WebServerLib webServer;
 MqttLib mqtt;
+
+void mqttTask(void* pvParameters) {
+  // opcional: registrar en el WDT si quieres testear (no recomendado en release)
+  // esp_task_wdt_add(NULL);
+
+  for (;;) {
+    mqtt.loop();                         // procesar MQTT
+    vTaskDelay(pdMS_TO_TICKS(10));       // cede 10 ms (ajusta según tu carga)
+    // opcional: esp_task_wdt_reset();   // si usas task WDT
+  }
+
+  // esp_task_wdt_delete(NULL);
+  vTaskDelete(NULL);
+}
 
 // ==================== SETUP ====================
 void setup() {
@@ -66,10 +81,10 @@ void setup() {
 
   // Inicializar actuadores
   Serial.println("[Setup] Inicializando actuadores...");
-  actuators.begin(MOTOR1A, MOTOR2A,/*MOTOR3A,*/ MOTOR4A,
+  actuators.begin(MOTOR1A, MOTOR2A, MOTOR3A, MOTOR4A,
                   BUZZER_PIN, RED_PIN, GREEN_PIN, BLUE_PIN);
 
-  // Configurar metadatos con umbrales iniciales
+// Configurar metadatos con umbrales iniciales
   Serial.println("[Setup] Configurando metadatos...");
   DeviceConfig config;
   config.id = "ESP32-Invernadero";
@@ -101,6 +116,15 @@ void setup() {
   mqtt.begin(MQTT_BROKER, MQTT_PORT, &sensors, &actuators);
   mqtt.setPublishInterval(5000);
 
+  xTaskCreatePinnedToCore(
+    mqttTask,           // función
+    "mqttTask",         // nombre
+    4096,               // stack (ajusta si crash por stack)
+    NULL,
+    1,                  // prioridad
+    NULL,
+    1                   // pinnear a core 1 (si quieres)
+  );
   Serial.println("\n[Setup] Sistema listo!");
   Serial.println("========================================\n");
 }
