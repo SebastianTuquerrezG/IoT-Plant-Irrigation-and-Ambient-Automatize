@@ -15,6 +15,8 @@ MetadataLib::MetadataLib() {
   _config.tempMin = 15.0;
   _config.humedadMax = 70.0;
   _config.humedadMin = 50.0;
+  _config.luzBaja = 20;
+  _config.luzAlta = 500;
 }
 
 void MetadataLib::setConfig(DeviceConfig config) {
@@ -55,12 +57,26 @@ void MetadataLib::setTempMin(float valor) {
   Serial.println(valor);
 }
 
+void MetadataLib::setLuzBaja(int valor) {
+  _config.luzBaja = valor;
+  Serial.print("[MetadataLib] Umbral luz baja: ");
+  Serial.println(valor);
+}
+
+void MetadataLib::setLuzAlta(int valor) {
+  _config.luzAlta = valor;
+  Serial.print("[MetadataLib] Umbral luz alta: ");
+  Serial.println(valor);
+}
+
 String MetadataLib::getUmbralesJSON() {
   String json = "{";
   json += "\"humedad_max\":" + String(_config.humedadMax, 1) + ",";
   json += "\"humedad_min\":" + String(_config.humedadMin, 1) + ",";
   json += "\"temp_max\":" + String(_config.tempMax, 1) + ",";
-  json += "\"temp_min\":" + String(_config.tempMin, 1);
+  json += "\"temp_min\":" + String(_config.tempMin, 1) + ",";
+  json += "\"luz_baja\":" + String(_config.luzBaja) + ",";
+  json += "\"luz_alta\":" + String(_config.luzAlta);
   json += "}";
   return json;
 }
@@ -94,7 +110,9 @@ String MetadataLib::getDeviceJSON() {
   json += "\"humedad_max\":" + String(_config.humedadMax, 1) + ",";
   json += "\"humedad_min\":" + String(_config.humedadMin, 1) + ",";
   json += "\"temperatura_max\":" + String(_config.tempMax, 1) + ",";
-  json += "\"temperatura_min\":" + String(_config.tempMin, 1);
+  json += "\"temperatura_min\":" + String(_config.tempMin, 1) + ",";
+  json += "\"luz_baja\":" + String(_config.luzBaja) + ",";
+  json += "\"luz_alta\":" + String(_config.luzAlta);
   json += "},";
   
   // MQTT
@@ -138,7 +156,9 @@ String MetadataLib::getStatusJSON() {
   json += "\"humedad_max\":" + String(_config.humedadMax, 1) + ",";
   json += "\"humedad_min\":" + String(_config.humedadMin, 1) + ",";
   json += "\"temp_max\":" + String(_config.tempMax, 1) + ",";
-  json += "\"temp_min\":" + String(_config.tempMin, 1);
+  json += "\"temp_min\":" + String(_config.tempMin, 1) + ",";
+  json += "\"luz_baja\":" + String(_config.luzBaja) + ",";
+  json += "\"luz_alta\":" + String(_config.luzAlta);
   json += "}";
   
   json += "}";

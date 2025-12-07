@@ -119,22 +119,24 @@ void WebServerLib::handleSetUmbral() {
     return;
   }
   
-  float valor = valorStr.toFloat();
-  
   if (tipo == "humedad_max") {
-    _metadata->setHumedadMax(valor);
+    _metadata->setHumedadMax(valorStr.toFloat());
   } else if (tipo == "humedad_min") {
-    _metadata->setHumedadMin(valor);
+    _metadata->setHumedadMin(valorStr.toFloat());
   } else if (tipo == "temp_max") {
-    _metadata->setTempMax(valor);
+    _metadata->setTempMax(valorStr.toFloat());
   } else if (tipo == "temp_min") {
-    _metadata->setTempMin(valor);
+    _metadata->setTempMin(valorStr.toFloat());
+  } else if (tipo == "luz_baja") {
+    _metadata->setLuzBaja(valorStr.toInt());
+  } else if (tipo == "luz_alta") {
+    _metadata->setLuzAlta(valorStr.toInt());
   } else {
     _server.send(400, "application/json", "{\"error\":\"Tipo de umbral no valido\"}");
     return;
   }
   
-  String response = "{\"success\":true,\"tipo\":\"" + tipo + "\",\"valor\":" + String(valor, 1) + "}";
+  String response = "{\"success\":true,\"tipo\":\"" + tipo + "\",\"valor\":" + valorStr + "}";
   _server.send(200, "application/json", response);
 }
 
@@ -218,6 +220,14 @@ String WebServerLib::getWebPage() {
       font-size: 0.9em;
     }
     .btn-save:hover { background: #00ff88; }
+    .led-indicator { 
+      display: inline-block; 
+      width: 20px; 
+      height: 20px; 
+      border-radius: 50%; 
+      margin-right: 8px;
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
@@ -260,10 +270,30 @@ String WebServerLib::getWebPage() {
         <div class="sensor-value" id="humSuelo">--</div>
       </div>
 
-      <!-- Luminosidad -->
+      <!-- Luminosidad con umbrales editables -->
       <div class="card">
         <h2>☀️ Luminosidad</h2>
         <div class="sensor-value" id="ldr">--</div>
+        <div id="ledStatus" class="status-label">LED: --</div>
+        <div class="info-row">
+          <span class="info-label">Umbral Oscuro</span>
+          <span>
+            <input type="number" id="umbral_luz_baja" class="umbral-input" value=")rawliteral" + String(config.luzBaja) + R"rawliteral(">
+            <button class="btn-save" onclick="setUmbral('luz_baja', 'umbral_luz_baja')">OK</button>
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Umbral Brillante</span>
+          <span>
+            <input type="number" id="umbral_luz_alta" class="umbral-input" value=")rawliteral" + String(config.luzAlta) + R"rawliteral(">
+            <button class="btn-save" onclick="setUmbral('luz_alta', 'umbral_luz_alta')">OK</button>
+          </span>
+        </div>
+        <div style="margin-top:10px; font-size:0.85em; color:#888;">
+          <span class="led-indicator" style="background:#0066ff;"></span>&lt; Oscuro = Azul<br>
+          <span class="led-indicator" style="background:#00ff00;"></span>Medio = Verde<br>
+          <span class="led-indicator" style="background:#ff0000;"></span>&gt; Brillante = Rojo
+        </div>
       </div>
 
       <!-- Movimiento -->
@@ -327,6 +357,23 @@ String WebServerLib::getWebPage() {
           const sueloEl = document.getElementById('humSuelo');
           sueloEl.className = 'sensor-value ' + (data.sensores.humedad_suelo === 'SECO' ? 'warning' : 'success');
           
+          // Indicador LED según luminosidad
+          const luzVal = data.sensores.luminosidad;
+          const luzBaja = data.umbrales.luz_baja;
+          const luzAlta = data.umbrales.luz_alta;
+          const ledEl = document.getElementById('ledStatus');
+          if (luzVal < luzBaja) {
+            ledEl.innerHTML = '<span class="led-indicator" style="background:#0066ff;"></span>LED: AZUL (Oscuro)';
+            ledEl.style.background = '#0066ff';
+          } else if (luzVal >= luzAlta) {
+            ledEl.innerHTML = '<span class="led-indicator" style="background:#ff0000;"></span>LED: ROJO (Brillante)';
+            ledEl.style.background = '#ff0000';
+          } else {
+            ledEl.innerHTML = '<span class="led-indicator" style="background:#00ff00;"></span>LED: VERDE (Medio)';
+            ledEl.style.background = '#00ff00';
+          }
+          ledEl.style.color = '#000';
+          
           // Movimiento
           const movEl = document.getElementById('movimiento');
           if (data.sensores.movimiento === 'DETECTADO') {
@@ -348,10 +395,12 @@ String WebServerLib::getWebPage() {
           // Deshumidificador
           updateActuadorUI('deshum', data.actuadores.deshumidificador);
           
-          // Actualizar inputs de umbrales si existen en la respuesta
+          // Actualizar inputs de umbrales
           if (data.umbrales) {
             document.getElementById('umbral_hum_max').value = data.umbrales.humedad_max;
             document.getElementById('umbral_hum_min').value = data.umbrales.humedad_min;
+            document.getElementById('umbral_luz_baja').value = data.umbrales.luz_baja;
+            document.getElementById('umbral_luz_alta').value = data.umbrales.luz_alta;
           }
         })
         .catch(err => console.log('Error:', err));
@@ -376,7 +425,6 @@ String WebServerLib::getWebPage() {
         .then(r => r.json())
         .then(data => {
           console.log('Respuesta:', data);
-          // Actualizar inmediatamente
           updateData();
         })
         .catch(err => console.log('Error:', err));

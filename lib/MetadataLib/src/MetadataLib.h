@@ -19,6 +19,8 @@ struct DeviceConfig {
   float tempMin;
   float humedadMax;
   float humedadMin;
+  int luzBaja;      // Umbral para zona oscura (LED azul)
+  int luzAlta;      // Umbral para zona brillante (LED rojo)
 };
 
 class MetadataLib {
@@ -57,25 +59,12 @@ public:
   
   // ========== MÉTODOS PARA MODIFICAR UMBRALES ==========
   
-  /**
-   * @brief Establece el umbral máximo de humedad ambiental
-   */
   void setHumedadMax(float valor);
-  
-  /**
-   * @brief Establece el umbral mínimo de humedad ambiental
-   */
   void setHumedadMin(float valor);
-  
-  /**
-   * @brief Establece el umbral máximo de temperatura
-   */
   void setTempMax(float valor);
-  
-  /**
-   * @brief Establece el umbral mínimo de temperatura
-   */
   void setTempMin(float valor);
+  void setLuzBaja(int valor);
+  void setLuzAlta(int valor);
   
   /**
    * @brief Genera JSON con los umbrales actuales

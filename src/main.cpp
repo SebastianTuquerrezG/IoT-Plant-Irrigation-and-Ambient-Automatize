@@ -97,6 +97,8 @@ void setup() {
   config.tempMin = 15.0;
   config.humedadMax = 70.0;
   config.humedadMin = 50.0;
+  config.luzBaja = 20;
+  config.luzAlta = 500;
   metadata.setConfig(config);
   metadata.setReferences(&sensors, &actuators);
 
@@ -159,8 +161,14 @@ void loop() {
   // Control de Buzzer por movimiento (siempre automático)
   actuators.setBuzzer(data.movimiento);
 
-  // Control de LED RGB por luminosidad (siempre automático)
-  actuators.setRGBByZone(data.zonaLuz);
+  // Control de LED RGB por luminosidad (usando umbrales configurables)
+  if (data.luminosidad < config.luzBaja) {
+    actuators.setRGB(0, 0, 255);    // Oscuro -> Azul
+  } else if (data.luminosidad >= config.luzAlta) {
+    actuators.setRGB(255, 0, 0);    // Brillante -> Rojo
+  } else {
+    actuators.setRGB(0, 255, 0);    // Medio -> Verde
+  }
 
   // 3. Servicios de comunicación
   webServer.handleClient();  // Atender peticiones HTTP
