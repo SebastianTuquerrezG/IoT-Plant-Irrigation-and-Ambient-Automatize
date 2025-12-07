@@ -37,13 +37,11 @@ public:
   
   /**
    * @brief Genera JSON con información del dispositivo (metadatos)
-   * @return String JSON con metadatos
    */
   String getDeviceJSON();
   
   /**
    * @brief Genera JSON con estado actual de sensores y actuadores
-   * @return String JSON con estado
    */
   String getStatusJSON();
   
@@ -57,6 +55,33 @@ public:
    */
   DeviceConfig getConfig();
   
+  // ========== MÉTODOS PARA MODIFICAR UMBRALES ==========
+  
+  /**
+   * @brief Establece el umbral máximo de humedad ambiental
+   */
+  void setHumedadMax(float valor);
+  
+  /**
+   * @brief Establece el umbral mínimo de humedad ambiental
+   */
+  void setHumedadMin(float valor);
+  
+  /**
+   * @brief Establece el umbral máximo de temperatura
+   */
+  void setTempMax(float valor);
+  
+  /**
+   * @brief Establece el umbral mínimo de temperatura
+   */
+  void setTempMin(float valor);
+  
+  /**
+   * @brief Genera JSON con los umbrales actuales
+   */
+  String getUmbralesJSON();
+  
 private:
   DeviceConfig _config;
   SensorsLib* _sensors;
@@ -64,4 +89,3 @@ private:
 };
 
 #endif
-

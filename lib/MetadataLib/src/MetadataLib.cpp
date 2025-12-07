@@ -30,6 +30,41 @@ DeviceConfig MetadataLib::getConfig() {
   return _config;
 }
 
+// ========== MÉTODOS PARA MODIFICAR UMBRALES ==========
+void MetadataLib::setHumedadMax(float valor) {
+  _config.humedadMax = valor;
+  Serial.print("[MetadataLib] Umbral humedad max: ");
+  Serial.println(valor);
+}
+
+void MetadataLib::setHumedadMin(float valor) {
+  _config.humedadMin = valor;
+  Serial.print("[MetadataLib] Umbral humedad min: ");
+  Serial.println(valor);
+}
+
+void MetadataLib::setTempMax(float valor) {
+  _config.tempMax = valor;
+  Serial.print("[MetadataLib] Umbral temp max: ");
+  Serial.println(valor);
+}
+
+void MetadataLib::setTempMin(float valor) {
+  _config.tempMin = valor;
+  Serial.print("[MetadataLib] Umbral temp min: ");
+  Serial.println(valor);
+}
+
+String MetadataLib::getUmbralesJSON() {
+  String json = "{";
+  json += "\"humedad_max\":" + String(_config.humedadMax, 1) + ",";
+  json += "\"humedad_min\":" + String(_config.humedadMin, 1) + ",";
+  json += "\"temp_max\":" + String(_config.tempMax, 1) + ",";
+  json += "\"temp_min\":" + String(_config.tempMin, 1);
+  json += "}";
+  return json;
+}
+
 String MetadataLib::getDeviceJSON() {
   String json = "{";
   json += "\"id\":\"" + _config.id + "\",";
@@ -49,18 +84,17 @@ String MetadataLib::getDeviceJSON() {
   // Actuadores
   json += "\"actuadores\":[";
   json += "{\"id\":5,\"nombre\":\"BombaRiego\",\"tipo\":\"motor\",\"gpio\":\"17,25\",\"descripcion\":\"Bomba de agua para riego\"},";
-  json += "{\"id\":6,\"nombre\":\"Ventilador\",\"tipo\":\"motor\",\"gpio\":16,\"descripcion\":\"Ventilador para control de temperatura\"},";
-  json += "{\"id\":7,\"nombre\":\"Deshumidificador\",\"tipo\":\"motor\",\"gpio\":27,\"descripcion\":\"Motor para control de humedad\"},";
-  json += "{\"id\":8,\"nombre\":\"Buzzer\",\"tipo\":\"alarma\",\"gpio\":26,\"descripcion\":\"Alarma sonora de movimiento\"},";
-  json += "{\"id\":9,\"nombre\":\"LED_RGB\",\"tipo\":\"indicador\",\"gpio\":\"5,13,12\",\"descripcion\":\"Indicador visual de luminosidad\"}";
+  json += "{\"id\":6,\"nombre\":\"Deshumidificador\",\"tipo\":\"motor\",\"gpio\":27,\"descripcion\":\"Motor para control de humedad\"},";
+  json += "{\"id\":7,\"nombre\":\"Buzzer\",\"tipo\":\"alarma\",\"gpio\":26,\"descripcion\":\"Alarma sonora de movimiento\"},";
+  json += "{\"id\":8,\"nombre\":\"LED_RGB\",\"tipo\":\"indicador\",\"gpio\":\"5,13,12\",\"descripcion\":\"Indicador visual de luminosidad\"}";
   json += "],";
   
   // Umbrales
   json += "\"umbrales\":{";
-  json += "\"temperatura_max\":" + String(_config.tempMax) + ",";
-  json += "\"temperatura_min\":" + String(_config.tempMin) + ",";
-  json += "\"humedad_max\":" + String(_config.humedadMax) + ",";
-  json += "\"humedad_min\":" + String(_config.humedadMin);
+  json += "\"humedad_max\":" + String(_config.humedadMax, 1) + ",";
+  json += "\"humedad_min\":" + String(_config.humedadMin, 1) + ",";
+  json += "\"temperatura_max\":" + String(_config.tempMax, 1) + ",";
+  json += "\"temperatura_min\":" + String(_config.tempMin, 1);
   json += "},";
   
   // MQTT
@@ -94,11 +128,18 @@ String MetadataLib::getStatusJSON() {
     
     json += "\"actuadores\":{";
     json += "\"bomba\":{\"estado\":\"" + String(state.bomba ? "ON" : "OFF") + "\",\"modo\":\"" + String(modes.bombaManual ? "MANUAL" : "AUTO") + "\"},";
-    json += "\"ventilador\":{\"estado\":\"" + String(state.ventilador ? "ON" : "OFF") + "\",\"modo\":\"" + String(modes.ventiladorManual ? "MANUAL" : "AUTO") + "\"},";
     json += "\"deshumidificador\":{\"estado\":\"" + String(state.deshumidificador ? "ON" : "OFF") + "\",\"modo\":\"" + String(modes.deshumidificadorManual ? "MANUAL" : "AUTO") + "\"},";
     json += "\"buzzer\":{\"estado\":\"" + String(state.buzzer ? "ON" : "OFF") + "\"}";
-    json += "}";
+    json += "},";
   }
+  
+  // Incluir umbrales actuales en el status
+  json += "\"umbrales\":{";
+  json += "\"humedad_max\":" + String(_config.humedadMax, 1) + ",";
+  json += "\"humedad_min\":" + String(_config.humedadMin, 1) + ",";
+  json += "\"temp_max\":" + String(_config.tempMax, 1) + ",";
+  json += "\"temp_min\":" + String(_config.tempMin, 1);
+  json += "}";
   
   json += "}";
   return json;
@@ -113,4 +154,3 @@ String MetadataLib::getCommandResponseJSON(String actuador, String estado, Strin
   json += "}";
   return json;
 }
-

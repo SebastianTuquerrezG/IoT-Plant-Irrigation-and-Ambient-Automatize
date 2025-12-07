@@ -3,16 +3,11 @@
  * 
  * Este proyecto implementa un sistema IoT completo con:
  * - 4 sensores (DHT11, HW-080, PIR, LDR)
- * - 5 actuadores (Bomba, Ventilador, Deshumidificador, Buzzer, LED RGB)
+ * - 3 actuadores (Bomba, Deshumidificador, Buzzer, LED RGB)
  * - Servidor web con dashboard y API REST
  * - Comunicación MQTT para telemetría y control remoto
  * 
- * Código modularizado en librerías propias:
- * - SensorsLib: Lectura de sensores
- * - ActuatorsLib: Control de actuadores
- * - MetadataLib: Generación de JSON
- * - WebServerLib: Servidor HTTP y API REST
- * - MqttLib: Comunicación MQTT
+ * El sensor de temperatura se usa solo para monitoreo.
  */
 
 #include <Arduino.h>
@@ -35,7 +30,7 @@
 // Actuadores
 #define MOTOR1A         17    // Bomba
 #define MOTOR2A         25    // Bomba
-#define MOTOR3A         16    // Ventilador
+//#define MOTOR3A         16    // Ventilador
 #define MOTOR4A         27    // Deshumidificador
 #define BUZZER_PIN      26
 #define RED_PIN         12
@@ -45,11 +40,6 @@
 // ==================== CONFIGURACIÓN DEL SISTEMA ====================
 const char* MQTT_BROKER = "test.mosquitto.org";
 const int MQTT_PORT = 1883;
-
-const float TEMP_MAX = 19.0;
-const float TEMP_MIN = 15.0;
-const float HUMEDAD_MAX = 70.0;
-const float HUMEDAD_MIN = 50.0;
 
 // ==================== INSTANCIAS DE LIBRERÍAS ====================
 SensorsLib sensors;
@@ -76,10 +66,10 @@ void setup() {
 
   // Inicializar actuadores
   Serial.println("[Setup] Inicializando actuadores...");
-  actuators.begin(MOTOR1A, MOTOR2A, MOTOR3A, MOTOR4A,
+  actuators.begin(MOTOR1A, MOTOR2A,/*MOTOR3A,*/ MOTOR4A,
                   BUZZER_PIN, RED_PIN, GREEN_PIN, BLUE_PIN);
 
-  // Configurar metadatos
+  // Configurar metadatos con umbrales iniciales
   Serial.println("[Setup] Configurando metadatos...");
   DeviceConfig config;
   config.id = "ESP32-Invernadero";
@@ -88,10 +78,10 @@ void setup() {
   config.descripcion = "Sistema de riego automatico y control ambiental";
   config.mqttBroker = MQTT_BROKER;
   config.mqttPort = MQTT_PORT;
-  config.tempMax = TEMP_MAX;
-  config.tempMin = TEMP_MIN;
-  config.humedadMax = HUMEDAD_MAX;
-  config.humedadMin = HUMEDAD_MIN;
+  config.tempMax = 19.0;
+  config.tempMin = 15.0;
+  config.humedadMax = 70.0;
+  config.humedadMin = 50.0;
   metadata.setConfig(config);
   metadata.setReferences(&sensors, &actuators);
 
@@ -109,7 +99,7 @@ void setup() {
   // Inicializar MQTT
   Serial.println("[Setup] Iniciando cliente MQTT...");
   mqtt.begin(MQTT_BROKER, MQTT_PORT, &sensors, &actuators);
-  mqtt.setPublishInterval(5000); // Publicar cada 5 segundos
+  mqtt.setPublishInterval(5000);
 
   Serial.println("\n[Setup] Sistema listo!");
   Serial.println("========================================\n");
@@ -121,6 +111,9 @@ void loop() {
   sensors.update();
   SensorData data = sensors.getData();
 
+  // Obtener umbrales actuales (pueden cambiar desde la web)
+  DeviceConfig config = metadata.getConfig();
+
   // 2. Lógica de automatización (solo si no está en modo manual)
   
   // Control de Bomba por humedad de suelo
@@ -128,20 +121,13 @@ void loop() {
     actuators.setBomba(data.humedadSuelo); // Seco (true) = Bomba ON
   }
 
-  // Control de Ventilador por temperatura
-  if (!actuators.isVentiladorManual()) {
-    if (data.temperatura >= TEMP_MAX) {
-      actuators.setVentilador(true);
-    } else if (data.temperatura <= TEMP_MIN) {
-      actuators.setVentilador(false);
-    }
-  }
+  // El sensor de temperatura funciona para monitoreo
 
   // Control de Deshumidificador por humedad ambiental
   if (!actuators.isDeshumidificadorManual()) {
-    if (data.humedadAmbiental >= HUMEDAD_MAX) {
+    if (data.humedadAmbiental >= config.humedadMax) {
       actuators.setDeshumidificador(true);
-    } else if (data.humedadAmbiental <= HUMEDAD_MIN) {
+    } else if (data.humedadAmbiental <= config.humedadMin) {
       actuators.setDeshumidificador(false);
     }
   }

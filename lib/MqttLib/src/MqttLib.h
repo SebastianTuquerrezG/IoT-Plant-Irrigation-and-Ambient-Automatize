@@ -14,22 +14,16 @@ public:
   
   /**
    * @brief Inicializa la conexión MQTT
-   * @param server Dirección del broker MQTT
-   * @param port Puerto del broker (generalmente 1883)
-   * @param sensors Referencia a la librería de sensores
-   * @param actuators Referencia a la librería de actuadores
    */
   void begin(const char* server, int port, SensorsLib* sensors, ActuatorsLib* actuators);
   
   /**
    * @brief Publica el metadata del sistema
-   * @param payload Cadena JSON con el metadata
    */
   void publishMetadata(const char* payload);
 
   /**
    * @brief Mantiene la conexión MQTT activa
-   * Debe llamarse en el loop principal
    */
   void loop();
   
@@ -66,20 +60,20 @@ private:
   unsigned long _lastPublish;
   unsigned long _publishInterval;
   
-  // Topics de publicación
+  // Topics de publicación (sensores)
   static constexpr const char* TOPIC_TEMPERATURA = "invernadero/sensores/temperatura";
   static constexpr const char* TOPIC_HUMEDAD_AMB = "invernadero/sensores/humedad_ambiental";
   static constexpr const char* TOPIC_HUMEDAD_SUELO = "invernadero/sensores/humedad_suelo";
   static constexpr const char* TOPIC_LUMINOSIDAD = "invernadero/sensores/luminosidad";
   static constexpr const char* TOPIC_MOVIMIENTO = "invernadero/sensores/movimiento";
+  
+  // Topics de publicación (actuadores)
   static constexpr const char* TOPIC_ESTADO_BOMBA = "invernadero/actuadores/bomba/estado";
-  static constexpr const char* TOPIC_ESTADO_VENTILADOR = "invernadero/actuadores/ventilador/estado";
   static constexpr const char* TOPIC_ESTADO_DESHUM = "invernadero/actuadores/deshumidificador/estado";
   static constexpr const char* TOPIC_ESTADO_BUZZER = "invernadero/actuadores/buzzer/estado";
   
   // Topics de suscripción (comandos)
   static constexpr const char* TOPIC_CMD_BOMBA = "invernadero/actuadores/bomba/comando";
-  static constexpr const char* TOPIC_CMD_VENTILADOR = "invernadero/actuadores/ventilador/comando";
   static constexpr const char* TOPIC_CMD_DESHUM = "invernadero/actuadores/deshumidificador/comando";
   
   void reconnect();
@@ -92,4 +86,3 @@ private:
 extern MqttLib* _mqttInstance;
 
 #endif
-

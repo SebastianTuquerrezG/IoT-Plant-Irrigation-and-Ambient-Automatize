@@ -4,7 +4,7 @@
 MqttLib* _mqttInstance = nullptr;
 
 // Metadata constante
-const char* METADATA_PAYLOAD = "{\"device\":\"ESP32 Invernadero\",\"location\":\"Casa\",\"sensors\":[\"temperatura\",\"humedad_ambiental\",\"humedad_suelo\",\"luminosidad\",\"movimiento\"],\"actuators\":[\"bomba\",\"ventilador\",\"deshumidificador\",\"buzzer\"]}";
+const char* METADATA_PAYLOAD = "{\"device\":\"ESP32 Invernadero\",\"location\":\"Casa\",\"sensors\":[\"temperatura\",\"humedad_ambiental\",\"humedad_suelo\",\"luminosidad\",\"movimiento\"],\"actuators\":[\"bomba\",\"deshumidificador\",\"buzzer\"]}";
 
 MqttLib::MqttLib() : _client(_espClient) {
   _sensors = nullptr;
@@ -12,7 +12,7 @@ MqttLib::MqttLib() : _client(_espClient) {
   _server = nullptr;
   _port = 1883;
   _lastPublish = 0;
-  _publishInterval = 5000; // 5 segundos por defecto
+  _publishInterval = 5000;
   _mqttInstance = this;
   clientId = "ESP32_" + String(random(0xffff), HEX);
 }
@@ -33,7 +33,7 @@ void MqttLib::begin(const char* server, int port, SensorsLib* sensors, Actuators
 }
 
 void MqttLib::publishMetadata(const char* payload) {
-  _client.publish("invernadero/metadata", payload, true); // retained = true
+  _client.publish("invernadero/metadata", payload, true);
 }
 
 void MqttLib::loop() {
@@ -42,7 +42,6 @@ void MqttLib::loop() {
   }
   _client.loop();
   
-  // Publicar datos periódicamente
   unsigned long ahora = millis();
   if (ahora - _lastPublish >= _publishInterval) {
     _lastPublish = ahora;
@@ -80,7 +79,6 @@ void MqttLib::reconnect() {
 
 void MqttLib::subscribeToCommands() {
   _client.subscribe(TOPIC_CMD_BOMBA);
-  _client.subscribe(TOPIC_CMD_VENTILADOR);
   _client.subscribe(TOPIC_CMD_DESHUM);
   Serial.println("[MqttLib] Suscrito a topics de comandos");
 }
@@ -106,13 +104,26 @@ void MqttLib::handleCallback(char* topic, byte* payload, unsigned int length) {
   mensaje.toUpperCase();
   
   if (topicStr == TOPIC_CMD_BOMBA) {
-    _actuators->executeCommand("bomba", mensaje);
-  }
-  else if (topicStr == TOPIC_CMD_VENTILADOR) {
-    _actuators->executeCommand("ventilador", mensaje);
+    if (mensaje == "ON") {
+      _actuators->setBombaManual(true);
+      _actuators->setBomba(true);
+    } else if (mensaje == "OFF") {
+      _actuators->setBombaManual(true);
+      _actuators->setBomba(false);
+    } else if (mensaje == "AUTO") {
+      _actuators->setBombaManual(false);
+    }
   }
   else if (topicStr == TOPIC_CMD_DESHUM) {
-    _actuators->executeCommand("deshumidificador", mensaje);
+    if (mensaje == "ON") {
+      _actuators->setDeshumidificadorManual(true);
+      _actuators->setDeshumidificador(true);
+    } else if (mensaje == "OFF") {
+      _actuators->setDeshumidificadorManual(true);
+      _actuators->setDeshumidificador(false);
+    } else if (mensaje == "AUTO") {
+      _actuators->setDeshumidificadorManual(false);
+    }
   }
 }
 
@@ -139,17 +150,18 @@ void MqttLib::publishData() {
   
   // Publicar estados de actuadores
   _client.publish(TOPIC_ESTADO_BOMBA, actuatorState.bomba ? "ON" : "OFF");
-  _client.publish(TOPIC_ESTADO_VENTILADOR, actuatorState.ventilador ? "ON" : "OFF");
   _client.publish(TOPIC_ESTADO_DESHUM, actuatorState.deshumidificador ? "ON" : "OFF");
   _client.publish(TOPIC_ESTADO_BUZZER, actuatorState.buzzer ? "ON" : "OFF");
   
-  Serial.println("[MqttLib] Datos publicados");
+  // Publicar JSON completo
   String payload = "{";
-  payload += "\"temp\":" + String(sensorData.temperatura,1) + ",";
-  payload += "\"hum\":" + String(sensorData.humedadAmbiental,1) + ",";
+  payload += "\"temp\":" + String(sensorData.temperatura, 1) + ",";
+  payload += "\"hum\":" + String(sensorData.humedadAmbiental, 1) + ",";
   payload += "\"soil\":\"" + String(sensorData.humedadSuelo ? "SECO" : "HUMEDO") + "\",";
   payload += "\"ldr\":" + String(sensorData.luminosidad) + ",";
-  payload += "\"motion\":\"" + String(sensorData.movimiento ? "DETECTADO":"SIN_MOVIMIENTO") + "\"";
+  payload += "\"motion\":\"" + String(sensorData.movimiento ? "DETECTADO" : "SIN_MOVIMIENTO") + "\"";
   payload += "}";
   _client.publish("invernadero/sensors/json", payload.c_str());
+  
+  Serial.println("[MqttLib] Datos publicados");
 }
